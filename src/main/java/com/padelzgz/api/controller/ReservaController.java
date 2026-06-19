@@ -1,6 +1,7 @@
 package com.padelzgz.api.controller;
 
 import com.padelzgz.api.dto.ReservaInDTO;
+import com.padelzgz.api.dto.ReservaOutDTO;
 import com.padelzgz.api.exception.*;
 import com.padelzgz.api.model.Reserva;
 import com.padelzgz.api.service.ReservaService;
@@ -25,8 +26,32 @@ public class ReservaController {
 
     @Autowired private ReservaService reservaService;
 
+    private ReservaOutDTO toDTO(Reserva r) {
+        ReservaOutDTO dto = new ReservaOutDTO();
+        dto.setId(r.getId());
+        dto.setFecha(r.getFecha());
+        dto.setHoraInicio(r.getHoraInicio());
+        dto.setHoraFin(r.getHoraFin());
+        dto.setPrecio(r.getPrecio());
+        dto.setPagado(r.isPagado());
+        dto.setComentario(r.getComentario());
+        if (r.getPista() != null) {
+            dto.setPistaId(r.getPista().getId());
+            dto.setPistaNumero(r.getPista().getNumero());
+            dto.setPistaTipo(r.getPista().getTipo());
+            dto.setPistaSuperficie(r.getPista().getSuperficie());
+        }
+        if (r.getUsuario() != null) {
+            dto.setUsuarioId(r.getUsuario().getId());
+            dto.setUsuarioNombre(r.getUsuario().getNombre());
+            dto.setUsuarioApellidos(r.getUsuario().getApellidos());
+            dto.setUsuarioEmail(r.getUsuario().getEmail());
+        }
+        return dto;
+    }
+
     @GetMapping
-    public ResponseEntity<Set<Reserva>> getReservas(
+    public ResponseEntity<List<ReservaOutDTO>> getReservas(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @RequestParam(required = false) String pagado) {
         logger.info("GET /reservas fecha={} pagado={}", fecha, pagado);
@@ -40,7 +65,7 @@ public class ReservaController {
         } else {
             reservas = reservaService.findAll();
         }
-        return ResponseEntity.ok(reservas);
+        return ResponseEntity.ok(reservas.stream().map(this::toDTO).toList());
     }
 
     @GetMapping("/{id}")
@@ -50,15 +75,15 @@ public class ReservaController {
     }
 
     @GetMapping("/pista/{pistaId}")
-    public ResponseEntity<Set<Reserva>> getReservasByPista(@PathVariable long pistaId) {
+    public ResponseEntity<List<ReservaOutDTO>> getReservasByPista(@PathVariable long pistaId) {
         logger.info("GET /reservas/pista/{}", pistaId);
-        return ResponseEntity.ok(reservaService.findByPistaId(pistaId));
+        return ResponseEntity.ok(reservaService.findByPistaId(pistaId).stream().map(this::toDTO).toList());
     }
 
     @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<Set<Reserva>> getReservasByUsuario(@PathVariable long usuarioId) {
+    public ResponseEntity<List<ReservaOutDTO>> getReservasByUsuario(@PathVariable long usuarioId) {
         logger.info("GET /reservas/usuario/{}", usuarioId);
-        return ResponseEntity.ok(reservaService.findByUsuarioId(usuarioId));
+        return ResponseEntity.ok(reservaService.findByUsuarioId(usuarioId).stream().map(this::toDTO).toList());
     }
 
     @PostMapping
