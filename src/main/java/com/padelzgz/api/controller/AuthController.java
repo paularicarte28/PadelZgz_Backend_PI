@@ -3,6 +3,8 @@ package com.padelzgz.api.controller;
 import com.padelzgz.api.dto.LoginRequestDTO;
 import com.padelzgz.api.dto.LoginResponseDTO;
 import com.padelzgz.api.exception.ErrorResponse;
+import com.padelzgz.api.model.Usuario;
+import com.padelzgz.api.repository.UsuarioRepository;
 import com.padelzgz.api.security.JwtUtils;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -10,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.authentication.*;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -30,11 +33,9 @@ public class AuthController {
     @Autowired
     private UserDetailsService userDetailsService;
 
-    /**
-     * POST /auth/login
-     * Body: { "email": "...", "password": "..." }
-     * Respuesta: { "token": "...", "tipo": "Bearer", "email": "..." }
-     */
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
         logger.info("POST /auth/login email={}", loginRequest.getEmail());
@@ -55,5 +56,13 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ErrorResponse.generalError(401, "Email o contraseña incorrectos"));
         }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> me(Authentication authentication) {
+        logger.info("GET /auth/me email={}", authentication.getName());
+        return usuarioRepository.findByEmail(authentication.getName())
+                .map(u -> ResponseEntity.ok((Object) u))
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 }
